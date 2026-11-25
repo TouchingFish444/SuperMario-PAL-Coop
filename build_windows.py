@@ -49,7 +49,7 @@ def build(*, include_rom: bool = False) -> tuple[Path, ...]:
     if sys.platform != "win32" or calcsize("P") != 8:
         raise RuntimeError("请使用 64 位 Windows Python 构建 Windows 便携版")
 
-    root_files = [NETPLAY_CONFIG, ROOT / "README.md"]
+    root_files = [NETPLAY_CONFIG, ROOT / "README.md", ROOT / "docs" / "architecture.md"]
     root_files.extend(ROOT / "patches" / name for name in sorted({PAL_PATCH, *PATCHES.values()}))
     files = [*root_files, *runtime_files()]
     for path in files:
@@ -90,10 +90,17 @@ def build(*, include_rom: bool = False) -> tuple[Path, ...]:
                 relative_rom = PAL_COOP_ROM.relative_to(ROOT).as_posix()
                 bundle.writestr(f"{package_name}/{relative_rom}", rom)
 
-        if not include_rom:
-            launcher.replace(exe_path)
         archive.replace(zip_path)
-    return (zip_path,) if include_rom else (exe_path, zip_path)
+        if include_rom:
+            return (zip_path,)
+        try:
+            launcher.replace(exe_path)
+        except PermissionError as error:
+            if not exe_path.is_file():
+                raise
+            print(f"已生成便携包。无法替换根目录的启动器：{error}", file=sys.stderr)
+            return (zip_path,)
+    return exe_path, zip_path
 
 
 if __name__ == "__main__":

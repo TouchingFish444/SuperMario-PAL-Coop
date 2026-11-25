@@ -56,7 +56,7 @@ py -3 .\build_windows.py
 py -3 .\build_windows.py --include-rom
 ```
 
-普通构建生成根目录的 `SuperMario-PAL-v3.exe` 和 `dist/SuperMario-PAL-v3-Win64.zip`。即玩构建把已经生成的 PAL v3 双人 ROM 加入单独的 `dist/SuperMario-PAL-v3-ReadyToPlay-Win64.zip`，完整解压后启动器会自动选中它。
+普通构建生成根目录的 `SuperMario-PAL-v3.exe` 和 `dist/SuperMario-PAL-v3-Win64.zip`。如果根目录的启动器正在运行，新启动器可从生成的便携包取得。即玩构建把已经生成的 PAL v3 双人 ROM 加入单独的 `dist/SuperMario-PAL-v3-ReadyToPlay-Win64.zip`，完整解压后启动器会自动选中它。
 
 ## 维护补丁
 
