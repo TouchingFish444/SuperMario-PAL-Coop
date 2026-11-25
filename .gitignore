@@ -1,0 +1,8 @@
+/runtime/
+/roms/
+/dist/
+/*.exe
+*.[nN][eE][sS]
+__pycache__/
+*.py[cod]
+*.log
