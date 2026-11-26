@@ -10,25 +10,41 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 
-from bps import apply_bps
+from app.bps import apply_bps
 
 
 FROZEN = getattr(sys, "frozen", False)
-ROOT = Path(sys.executable if FROZEN else __file__).resolve().parent
+CONFIG_PATH = Path("config", "netplay.cfg")
+
+
+def project_root() -> Path:
+    if not FROZEN:
+        return Path(__file__).resolve().parents[1]
+    launcher_dir = Path(sys.executable).resolve().parent
+    if launcher_dir.name.lower() == "bin" and not (launcher_dir / CONFIG_PATH).is_file():
+        return launcher_dir.parent
+    return launcher_dir
+
+
+ROOT = project_root()
 RUNTIME = ROOT / "runtime" / "RetroArch-Win64"
-NETPLAY_CONFIG = ROOT / "netplay.cfg"
+NETPLAY_CONFIG = ROOT / CONFIG_PATH
+ORIGINAL_ROMS = ROOT / "assets" / "roms"
 DEFAULT_ROM = ROOT / "roms" / "SuperMarioBrosCoop-v45.nes"
-PAL_COOP_ROM = ROOT / "roms" / "SuperMarioBros-PAL-Coop-1-1-v3.nes"
+PAL_RELEASE_TAG = "v5"
+PAL_COOP_ROM = ROOT / "roms" / f"SuperMarioBros-PAL-Coop-{PAL_RELEASE_TAG}.nes"
 DEFAULT_PORT = 55435
 TARGET_SHA1 = "9fc49680f445066c4f54ab87e63893110a5eb6d0"
 PAL_ORIGINAL_SHA1 = "ab30029efec6ccfc5d65dfda7fbc6e6489a80805"
-PAL_COOP_SHA1 = "f4c9f0e86f29b5661318e1c4473d4c471d7948b3"
+PAL_COOP_SHA1 = "cfb8b0ee0c4d6447d11af9641f282dbec2d41d51"
+PAL_COOP_V4_SHA1 = "9ef860daf95421fe49dd07aef2dd0ce9b19b40cb"
+PAL_COOP_V3_SHA1 = "f4c9f0e86f29b5661318e1c4473d4c471d7948b3"
 PAL_COOP_V2_SHA1 = "8568b3cbae8faa09401d4f06b48e299a7faa8fc1"
 PAL_COOP_V1_SHA1 = "01bcb374ef1d560b02944f32c0820fb9ccfa7997"
-PAL_PATCH = "SuperMarioBros-PAL-Coop-1-1-v3.bps"
+PAL_PATCH = f"SuperMarioBros-PAL-Coop-{PAL_RELEASE_TAG}.bps"
 PATCHES = {
-    "ea343f4e445a9050d4b4fbac2c77d0693b1d0922": "SuperMarioBrosCoop-v45.bps",
-    "33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd": "SuperMarioBrosCoop-v45-nes2header.bps",
+    "ea343f4e445a9050d4b4fbac2c77d0693b1d0922": "upstream/SuperMarioBrosCoop-v45.bps",
+    "33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd": "upstream/SuperMarioBrosCoop-v45-nes2header.bps",
 }
 ORIGINAL_PAYLOADS = {
     "facee9c577a5262dbe33ac4930bb0b58c8c037f7": "World 原版",
@@ -61,6 +77,10 @@ def describe_rom(rom: Path) -> tuple[RomKind, str]:
     data = read_nes_rom(rom)
     digest = sha1(data).hexdigest()
     if digest == PAL_COOP_SHA1:
+        return RomKind.PAL_COOP, f"PAL {PAL_RELEASE_TAG} · 跨关双人同屏，镜头等候落后玩家"
+    if digest == PAL_COOP_V4_SHA1:
+        return RomKind.PAL_COOP, "PAL v4 · 跨关双人同屏，共享镜头"
+    if digest == PAL_COOP_V3_SHA1:
         return RomKind.PAL_COOP, "PAL v3 · 1-1 地面双人同屏，共享镜头"
     if digest == PAL_COOP_V2_SHA1:
         return RomKind.PAL_COOP, "PAL v2 · 1-1 地面双人同屏，共享镜头"
@@ -69,7 +89,7 @@ def describe_rom(rom: Path) -> tuple[RomKind, str]:
     if digest == TARGET_SHA1:
         return RomKind.COOP, "Co-op v45 · 两人同屏，同时操作"
     if digest == PAL_ORIGINAL_SHA1:
-        return RomKind.PATCHABLE, "欧版 Rev A 原版 · 应用 PAL 补丁后可在 1-1 双人同屏"
+        return RomKind.PATCHABLE, f"欧版 Rev A 原版 · 可应用 PAL {PAL_RELEASE_TAG} 跨关双人补丁"
     if digest in PATCHES:
         return RomKind.PATCHABLE, "World 原版 · 应用补丁后可同屏联机"
     original = ORIGINAL_PAYLOADS.get(sha1(data[16:]).hexdigest())

@@ -9,12 +9,12 @@ import sys
 from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from netplay import NETPLAY_CONFIG, PAL_COOP_ROM, PAL_COOP_SHA1, PAL_PATCH, PATCHES, ROOT, RUNTIME
+from app.netplay import NETPLAY_CONFIG, PAL_COOP_ROM, PAL_COOP_SHA1, PAL_PATCH, PATCHES, ROOT, RUNTIME
 
 
-EXE_NAME = "SuperMario-PAL-v3.exe"
-PORTABLE_NAME = "SuperMario-PAL-v3-Win64"
-READY_TO_PLAY_NAME = "SuperMario-PAL-v3-ReadyToPlay-Win64"
+EXE_NAME = "SuperMario.exe"
+PORTABLE_NAME = "SuperMario-Win64"
+READY_TO_PLAY_NAME = "SuperMario-ReadyToPlay-Win64"
 PORTABLE_CONFIG = b'config_save_on_exit = "true"\n'
 NOTICES = """\
 RetroArch 1.22.2 (unmodified Libretro build)
@@ -65,14 +65,14 @@ def build(*, include_rom: bool = False) -> tuple[Path, ...]:
     package_name = READY_TO_PLAY_NAME if include_rom else PORTABLE_NAME
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
-    exe_path = ROOT / EXE_NAME
+    exe_path = ROOT / "bin" / EXE_NAME
     zip_path = dist / f"{package_name}.zip"
     with TemporaryDirectory(prefix="windows-build-", dir=dist) as temporary:
         stage = Path(temporary)
         subprocess.run([
             sys.executable, "-m", "PyInstaller", "--onefile", "--windowed", "--noupx",
-            "--name", Path(EXE_NAME).stem, "--distpath", str(stage),
-            "--workpath", str(stage / "work"), "--specpath", str(stage), str(ROOT / "launcher.py"),
+            "--name", Path(EXE_NAME).stem, "--distpath", str(stage), "--paths", str(ROOT),
+            "--workpath", str(stage / "work"), "--specpath", str(stage), str(ROOT / "app" / "launcher.py"),
         ], cwd=ROOT, check=True)
 
         launcher = stage / EXE_NAME
@@ -93,19 +93,20 @@ def build(*, include_rom: bool = False) -> tuple[Path, ...]:
         archive.replace(zip_path)
         if include_rom:
             return (zip_path,)
+        exe_path.parent.mkdir(exist_ok=True)
         try:
             launcher.replace(exe_path)
         except PermissionError as error:
             if not exe_path.is_file():
                 raise
-            print(f"已生成便携包。无法替换根目录的启动器：{error}", file=sys.stderr)
+            print(f"已生成便携包。无法替换 {exe_path}：{error}", file=sys.stderr)
             return (zip_path,)
     return exe_path, zip_path
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--include-rom", action="store_true", help="将已生成的 PAL v3 ROM 放入即玩包")
+    parser.add_argument("--include-rom", action="store_true", help="将当前 PAL 双人 ROM 放入即玩包")
     args = parser.parse_args()
     for output in build(include_rom=args.include_rom):
         print(output)

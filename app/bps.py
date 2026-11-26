@@ -1,4 +1,4 @@
-"""Apply a BPS patch to a caller-supplied ROM."""
+"""Apply and verify a BPS patch against a caller-supplied ROM."""
 
 from io import BytesIO
 from struct import unpack

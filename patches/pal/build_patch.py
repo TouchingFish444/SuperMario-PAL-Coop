@@ -1,4 +1,4 @@
-"""Build the PAL 1-1 co-op BPS overlay from the local Rev A image and new code."""
+"""Build the PAL co-op BPS overlay from the local Rev A image and new code."""
 
 import argparse
 from hashlib import sha1
@@ -8,12 +8,12 @@ import subprocess
 from tempfile import TemporaryDirectory
 from zlib import crc32
 
-from bps import apply_bps
+from app.bps import apply_bps
 
 
 HERE = Path(__file__).resolve().parent
 SOURCE_SHA1 = "ab30029efec6ccfc5d65dfda7fbc6e6489a80805"
-PATCH_PATH = HERE.parent / "SuperMarioBros-PAL-Coop-1-1-v3.bps"
+PATCH_PATH = HERE.parent / "SuperMarioBros-PAL-Coop-v5.bps"
 STUB_ADDRESS = 0xD69E
 STUB_SIZE = 0x3B
 PRG_START = 16
@@ -119,9 +119,12 @@ def build_patch(source: bytes, code: bytes, symbols: dict[str, int]) -> tuple[by
         0x819D: bytes.fromhex("AD FC 06 29 10"),          # Pause reads Start from the first pad.
         0x9282: bytes.fromhex("38 AD 7A 07 F0 21"),       # Turn-taking entry point.
         0x91D9: bytes.fromhex("CE 5A 07 10 0B"),          # Decrement lives, then branch if alive.
+        0xAF93: bytes.fromhex("AD FF 06 18 6D A1 03"),    # Read native camera scroll.
         0xB629: bytes.fromhex("90 43"),                   # Small Mario skips the fireball loop.
         0xBCF2: bytes.fromhex("48 A9 11 AE EE 03"),       # Native block strike.
+        0xC122: bytes.fromhex("20 92 C0"),               # Castle maze loopback.
         0xC99E: bytes.fromhex("A9 00 95 0F 95 16"),       # Clear an enemy slot.
+        0xCE0E: bytes.fromhex("20 F4 EC 98 48"),          # Render a castle firebar segment.
         0xDF97: bytes.fromhex("20 B8 DF DD 93 DF 60"),    # Classify a metatile.
         STUB_ADDRESS: bytes([0xFF]) * STUB_SIZE,         # Unused fixed-bank padding.
         0xFFFC: bytes.fromhex("00 80"),                  # Original reset vector.
@@ -145,11 +148,14 @@ def build_patch(source: bytes, code: bytes, symbols: dict[str, int]) -> tuple[by
         0x819D: b"\x20" + pack("<H", symbols["pause_input"]),
         0x91D9: b"\xA9\x02\xEA",   # LDA #2 / NOP: always take the normal restart branch.
         0x9282: b"\x38\x60",       # SEC / RTS: carry indicates no player switch.
+        0xAF93: b"\x4C" + pack("<H", symbols["coop_scroll"]),
         0xB629: b"\x90\x39",       # Update shared fireballs even if Mario is small.
     })
     writer.literal(overlay)
     writer.zero_fill(EXPANSION_SIZE - len(overlay))
     copy_with_edits(writer, LOWER_PRG_END, PRG_END, {
+        0xC122: b"\x20" + pack("<H", symbols["coop_castle_loop"]),
+        0xCE0E: b"\x20" + pack("<H", symbols["draw_firebar"]),
         STUB_ADDRESS: fixed,
         0xFFFC: pack("<H", symbols["reset_hook"]),
     })

@@ -8,9 +8,9 @@ from threading import Thread
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from netplay import (
-    DEFAULT_PORT, ROOT, RomKind, describe_rom, ipv4_address, port_number, preferred_coop_rom, prepare,
-    start_emulator,
+from app.netplay import (
+    DEFAULT_PORT, ORIGINAL_ROMS, ROOT, RomKind, describe_rom, ipv4_address, port_number,
+    preferred_coop_rom, prepare, start_emulator,
 )
 
 
@@ -30,8 +30,11 @@ def default_rom() -> Path | None:
     prepared = preferred_coop_rom()
     if prepared.is_file():
         return prepared
-    local_roms = [path for path in ROOT.glob("*.nes") if path.is_file()]
-    return local_roms[0] if len(local_roms) == 1 else None
+    for directory in (ORIGINAL_ROMS, ROOT):
+        local_roms = [path for path in directory.glob("*.nes") if path.is_file()]
+        if local_roms:
+            return local_roms[0] if len(local_roms) == 1 else None
+    return None
 
 
 def check_connection(address: str, port: int, result: SimpleQueue[tuple[str, str]]) -> None:
@@ -165,8 +168,8 @@ class Launcher:
 
         self.form_hint = ttk.Label(form, style="PanelMuted.TLabel", wraplength=480)
         self.form_hint.grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
-        ttk.Label(self.lobby, text="A / D 移动 · S 蹲下 · J 加速 / 火球 · K 跳跃\n"
-                  "Space 开始 / 暂停", style="Muted.TLabel").pack(anchor="w", pady=(9, 0))
+        ttk.Label(self.lobby, text="A / D 移动 · S 蹲下 · W 向上 / 攀爬\n"
+                  "J 加速 / 火球 · K 跳跃 · Space 开始 / 暂停", style="Muted.TLabel").pack(anchor="w", pady=(9, 0))
 
         actions = ttk.Frame(self.lobby)
         actions.pack(fill="x", pady=(12, 0))

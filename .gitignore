@@ -1,6 +1,9 @@
 /runtime/
+/assets/
 /roms/
 /dist/
+/bin/
+/archive/
 /*.exe
 *.[nN][eE][sS]
 __pycache__/
