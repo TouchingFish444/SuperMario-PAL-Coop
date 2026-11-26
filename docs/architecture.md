@@ -89,4 +89,4 @@ Git 跟踪源码、文档、配置和维护中的 BPS。素材目录、生成 RO
 py -3 -m tools.publish_release --repo TouchingFish444/SuperMario-PAL-Coop
 ```
 
-发布工具生成即玩包，上传为对应 GitHub Release 的附件，校验 ZIP 的 SHA-256 后发布。即玩包以 Release 附件保存，Git 仓库历史仍只记录源码、补丁、配置和文档。 [最新发行版](https://github.com/TouchingFish444/SuperMario-PAL-Coop/releases/latest)
+发布工具生成含 ROM 的即玩包，上传为对应 GitHub Release 的附件，校验 ZIP 的 SHA-256 后发布。公开仓库的发行版可直接下载，Git 仓库历史仍只记录源码、补丁、配置和文档。 [最新发行版](https://github.com/TouchingFish444/SuperMario-PAL-Coop/releases/latest)

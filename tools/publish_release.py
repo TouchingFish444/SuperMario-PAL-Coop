@@ -1,4 +1,4 @@
-"""Build and publish the current Windows ready-to-play package in a private GitHub repo."""
+"""Build and publish the current Windows ready-to-play package on GitHub."""
 
 import argparse
 from hashlib import sha256
@@ -50,8 +50,6 @@ def publish(repo: str, notes: Path) -> str:
         raise ValueError("请先提交本次发行的源码和文档")
     commit = run("git", "rev-parse", "HEAD")
     repository = json.loads(run("gh", "api", f"repos/{repo}"))
-    if not repository["private"]:
-        raise ValueError("含 ROM 的即玩包需要发布到私有 GitHub 仓库")
     branch = repository["default_branch"]
     if run("gh", "api", f"repos/{repo}/commits/{branch}", "--jq", ".sha") != commit:
         raise ValueError(f"请先把当前提交推送到 GitHub 的 {branch} 分支")
